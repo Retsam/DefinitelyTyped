@@ -37,6 +37,9 @@
 
 type CatchFilter<E> = (new (...args: any[]) => E) | ((error: E) => boolean) | (object & E);
 
+// Node-style callback
+type Callback<T> = (err: any, result?: T) => void;
+
 declare class Bluebird<R> implements PromiseLike<R>, Bluebird.Inspection<R> {
   /**
    * Create a new promise. The passed in function will receive functions `resolve` and `reject` as its arguments which can be called to seal the fate of the created promise.
@@ -245,9 +248,9 @@ declare class Bluebird<R> implements PromiseLike<R>, Bluebird.Inspection<R> {
    * The error argument will be `null` in case of success.
    * If the `callback` argument is not a function, this method does not do anything.
    */
-  nodeify(callback: (err: any, value?: R) => void, options?: Bluebird.SpreadOption): this;
+  nodeify(callback: Callback<R>, options?: Bluebird.SpreadOption): this;
   nodeify(...sink: any[]): this;
-  asCallback(callback: (err: any, value?: R) => void, options?: Bluebird.SpreadOption): this;
+  asCallback(callback: Callback<R>, options?: Bluebird.SpreadOption): this;
   asCallback(...sink: any[]): this;
 
   /**
@@ -542,11 +545,11 @@ declare class Bluebird<R> implements PromiseLike<R>, Bluebird.Inspection<R> {
    * The new function will always return a promise that is fulfilled with the original functions return values or rejected with thrown exceptions from the original function.
    * This method is convenient when a function can sometimes return synchronously or throw synchronously.
    */
-  static method<R, A1>(fn: (arg1: A1) => R | PromiseLike<R>): (arg1: A1) => Bluebird<R>;
-  static method<R, A1, A2>(fn: (arg1: A1, arg2: A2) => R | PromiseLike<R>): (arg1: A1, arg2: A2) => Bluebird<R>;
-  static method<R, A1, A2, A3>(fn: (arg1: A1, arg2: A2, arg3: A3) => R | PromiseLike<R>): (arg1: A1, arg2: A2, arg3: A3) => Bluebird<R>;
-  static method<R, A1, A2, A3, A4>(fn: (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => R | PromiseLike<R>): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Bluebird<R>;
   static method<R, A1, A2, A3, A4, A5>(fn: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => R | PromiseLike<R>): (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => Bluebird<R>;
+  static method<R, A1, A2, A3, A4>(fn: (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => R | PromiseLike<R>): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Bluebird<R>;
+  static method<R, A1, A2, A3>(fn: (arg1: A1, arg2: A2, arg3: A3) => R | PromiseLike<R>): (arg1: A1, arg2: A2, arg3: A3) => Bluebird<R>;
+  static method<R, A1, A2>(fn: (arg1: A1, arg2: A2) => R | PromiseLike<R>): (arg1: A1, arg2: A2) => Bluebird<R>;
+  static method<R, A1>(fn: (arg1: A1) => R | PromiseLike<R>): (arg1: A1) => Bluebird<R>;
   static method<R>(fn: (...args: any[]) => R | PromiseLike<R>): (...args: any[]) => Bluebird<R>;
 
   /**
@@ -611,27 +614,27 @@ declare class Bluebird<R> implements PromiseLike<R>, Bluebird.Inspection<R> {
    * If you pass a `receiver`, the `nodeFunction` will be called as a method on the `receiver`.
    */
   static promisify<T>(
-      func: (callback: (err: any, result?: T) => void) => void,
+      func: (callback: Callback<T>) => void,
       options?: Bluebird.PromisifyOptions
     ): () => Bluebird<T>;
   static promisify<T, A1>(
-      func: (arg1: A1, callback: (err: any, result?: T) => void) => void,
+      func: (arg1: A1, callback: Callback<T>) => void,
       options?: Bluebird.PromisifyOptions
     ): (arg1: A1) => Bluebird<T>;
   static promisify<T, A1, A2>(
-      func: (arg1: A1, arg2: A2, callback: (err: any, result?: T) => void) => void,
+      func: (arg1: A1, arg2: A2, callback: Callback<T>) => void,
       options?: Bluebird.PromisifyOptions
     ): (arg1: A1, arg2: A2) => Bluebird<T>;
   static promisify<T, A1, A2, A3>(
-      func: (arg1: A1, arg2: A2, arg3: A3, callback: (err: any, result?: T) => void) => void,
+      func: (arg1: A1, arg2: A2, arg3: A3, callback: Callback<T>) => void,
       options?: Bluebird.PromisifyOptions
     ): (arg1: A1, arg2: A2, arg3: A3) => Bluebird<T>;
   static promisify<T, A1, A2, A3, A4>(
-      func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: (err: any, result?: T) => void) => void,
+      func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, callback: Callback<T>) => void,
       options?: Bluebird.PromisifyOptions
     ): (arg1: A1, arg2: A2, arg3: A3, arg4: A4) => Bluebird<T>;
   static promisify<T, A1, A2, A3, A4, A5>(
-      func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5, callback: (err: any, result?: T) => void) => void,
+      func: (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5, callback: Callback<T>) => void,
       options?: Bluebird.PromisifyOptions
     ): (arg1: A1, arg2: A2, arg3: A3, arg4: A4, arg5: A5) => Bluebird<T>;
   static promisify(nodeFunction: (...args: any[]) => void, options?: Bluebird.PromisifyOptions): (...args: any[]) => Bluebird<any>;
@@ -651,9 +654,9 @@ declare class Bluebird<R> implements PromiseLike<R>, Bluebird.Inspection<R> {
    * Returns a promise that is resolved by a node style callback function.
    */
   static fromNode(resolver: (callback: (err: any, result?: any) => void) => void, options?: Bluebird.FromNodeOptions): Bluebird<any>;
-  static fromNode<T>(resolver: (callback: (err: any, result?: T) => void) => void, options?: Bluebird.FromNodeOptions): Bluebird<T>;
+  static fromNode<T>(resolver: (callback: Callback<T>) => void, options?: Bluebird.FromNodeOptions): Bluebird<T>;
   static fromCallback(resolver: (callback: (err: any, result?: any) => void) => void, options?: Bluebird.FromNodeOptions): Bluebird<any>;
-  static fromCallback<T>(resolver: (callback: (err: any, result?: T) => void) => void, options?: Bluebird.FromNodeOptions): Bluebird<T>;
+  static fromCallback<T>(resolver: (callback: Callback<T>) => void, options?: Bluebird.FromNodeOptions): Bluebird<T>;
 
   /**
    * Returns a function that can use `yield` to run asynchronous code synchronously.
