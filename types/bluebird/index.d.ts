@@ -40,6 +40,29 @@ type CatchFilter<E> = ((error: E) => boolean) | (object & E);
 type Resolvable<R> = R | PromiseLike<R>;
 type IterateFunction<T, R> = (item: T, index: number, arrayLength: number) => Resolvable<R>;
 
+// Utility for getting the keys of an object where the values are a particular type
+type KeysByType<O extends object, T> = {
+    [k in keyof O]-?: O[k] extends T ? k : never;
+}[keyof O];
+type FunctionKeys<O extends object> = KeysByType<O, Function>;
+
+// Utilities for a promisify function
+type PopFront<T extends readonly any[]> = T extends readonly [any, ...infer R] ? R : []
+type Last<T extends readonly any[]> = T extends readonly [] ? never : T extends readonly [infer U] ? U : Last<PopFront<T>>
+
+type PopLast<T extends readonly any[]> =
+  T extends [] ? []
+  : T extends [any] ? []
+  : T extends [infer A, any] ? [A]
+  : T extends [infer A, infer B, any] ? [A, B]
+  : T extends [infer A, infer B, infer C, any] ? [A, B, C]
+  : T extends [infer A, infer B, infer C, infer D, any] ? [A, B, C, D]
+  : never;
+
+type CallbackType<T> = T extends (err: any, result: infer R) => void ? R : any;
+
+type PromisifiedFunction<T extends (...args: any[]) => any> = (...args: PopLast<Parameters<T>>) => Promise<CallbackType<Last<Parameters<T>>>>;
+
 declare class Bluebird<R> implements PromiseLike<R>, Bluebird.Inspection<R> {
   readonly [Symbol.toStringTag]: "Object";
 
@@ -769,8 +792,7 @@ declare class Bluebird<R> implements PromiseLike<R>, Bluebird.Inspection<R> {
    * Note that the original methods on the object are not overwritten but new methods are created with the `Async`-postfix. For example,
    * if you `promisifyAll()` the node.js `fs` object use `fs.statAsync()` to call the promisified `stat` method.
    */
-  // TODO how to model promisifyAll?
-  static promisifyAll<T extends object>(target: T, options?: Bluebird.PromisifyAllOptions<T>): T;
+  static promisifyAll<T extends object, Suffix extends string = "Async">(target: T, options?: Bluebird.PromisifyAllOptions<T, Suffix>): Bluebird.PromisifiedAll<T, Suffix>;
 
   /**
    * Returns a promise that is resolved by a node style callback function.
@@ -1101,12 +1123,15 @@ declare namespace Bluebird {
     context?: any;
     multiArgs?: boolean;
   }
-  interface PromisifyAllOptions<T> extends PromisifyOptions {
-    suffix?: string;
+  interface PromisifyAllOptions<T, S extends string = "Async"> extends PromisifyOptions {
+    suffix?: S;
     filter?(name: string, func: (...args: any[]) => any, target?: any, passesDefaultFilter?: boolean): boolean;
     // The promisifier gets a reference to the original method and should return a function which returns a promise
     promisifier?(this: T, originalMethod: (...args: any[]) => any, defaultPromisifer: (...args: any[]) => (...args: any[]) => Bluebird<any>): () => PromiseLike<any>;
   }
+  type PromisifiedAll<T extends object, S extends string> = T & {
+      [K in FunctionKeys<T> as `${K & string}${S}`]: PromisifiedFunction<T[K]>;
+  };
   interface CoroutineOptions {
     yieldHandler(value: any): any;
   }
